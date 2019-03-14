@@ -7,15 +7,18 @@
 /* eslint-disable  no-restricted-syntax */
 
 const Alexa = require('ask-sdk');
+const Jargon = require('@jargon/alexa-skill-sdk');
+const ri = Jargon.ri;
 const ddbAdapter = require('ask-sdk-dynamodb-persistence-adapter'); // included in ask-sdk
 
 // TODO: The items below this comment need your attention.
 const SKILL_NAME = 'High Low Game';
 const ddbTableName = 'High-Low-Game';
-const FALLBACK_MESSAGE_DURING_GAME = `The ${SKILL_NAME} skill can't help you with that.  Try guessing a number between 0 and 100. `;
-const FALLBACK_REPROMPT_DURING_GAME = 'Please guess a number between 0 and 100.';
-const FALLBACK_MESSAGE_OUTSIDE_GAME = `The ${SKILL_NAME} skill can't help you with that.  It will come up with a number between 0 and 100 and you try to guess it by saying a number in that range. Would you like to play?`;
-const FALLBACK_REPROMPT_OUTSIDE_GAME = 'Say yes to start the game or no to quit.';
+
+const inGameFallback = ri('FALLBACK_MESSAGE_DURING_GAME', { skillName: SKILL_NAME });
+const inGameFallbackRepromt = ri('FALLBACK_REPROMPT_DURING_GAME');
+const outGameFallback = ri('FALLBACK_MESSAGE_OUTSIDE_GAME', { skillName: SKILL_NAME });
+const outGameFallbackReprompt = ri('FALLBACK_REPROMPT_OUTSIDE_GAME');
 
 const LaunchRequest = {
   canHandle(handlerInput) {
@@ -25,7 +28,6 @@ const LaunchRequest = {
   },
   async handle(handlerInput) {
     const attributesManager = handlerInput.attributesManager;
-    const responseBuilder = handlerInput.responseBuilder;
 
     const attributes = await attributesManager.getPersistentAttributes() || {};
     if (Object.keys(attributes).length === 0) {
@@ -36,11 +38,12 @@ const LaunchRequest = {
 
     attributesManager.setSessionAttributes(attributes);
 
-    const speechOutput = `Welcome to High Low guessing game. You have played ${attributes.gamesPlayed.toString()} times. would you like to play?`;
-    const reprompt = 'Say yes to start the game or no to quit.';
-    return responseBuilder
-      .speak(speechOutput)
-      .reprompt(reprompt)
+    const welcomeSpeech = ri('WELCOME.default', { gamesPlayed: attributes.gamesPlayed.toString() });
+    const welcomeReprompt = ri('WELCOME.reprompt');
+
+    return handlerInput.jrb
+      .speak(welcomeSpeech)
+      .reprompt(welcomeReprompt)
       .getResponse();
   },
 };
@@ -54,8 +57,8 @@ const ExitHandler = {
         || request.intent.name === 'AMAZON.StopIntent');
   },
   handle(handlerInput) {
-    return handlerInput.responseBuilder
-      .speak('Thanks for playing!')
+    return handlerInput.jrb
+      .speak(ri('GOODBYE.v1'))
       .getResponse();
   },
 };
@@ -77,13 +80,12 @@ const HelpIntent = {
     return request.type === 'IntentRequest' && request.intent.name === 'AMAZON.HelpIntent';
   },
   handle(handlerInput) {
-    const speechOutput = 'I am thinking of a number between zero and one hundred, try to guess it and I will tell you' +
-      ' if it is higher or lower.';
-    const reprompt = 'Try saying a number.';
+    const helpSpeechOutput = ri("HELP.default");
+    const helpReprompt = ri("HELP.reprompt");
 
-    return handlerInput.responseBuilder
-      .speak(speechOutput)
-      .reprompt(reprompt)
+    return handlerInput.jrb
+      .speak(helpSpeechOutput)
+      .reprompt(helpReprompt)
       .getResponse();
   },
 };
@@ -105,15 +107,17 @@ const YesIntent = {
   },
   handle(handlerInput) {
     const attributesManager = handlerInput.attributesManager;
-    const responseBuilder = handlerInput.responseBuilder;
     const sessionAttributes = attributesManager.getSessionAttributes();
 
     sessionAttributes.gameState = 'STARTED';
     sessionAttributes.guessNumber = Math.floor(Math.random() * 101);
 
-    return responseBuilder
-      .speak('Great! Try saying a number to start the game.')
-      .reprompt('Try saying a number.')
+    const startGameSpeech = ri("START.default");
+    const startGameReprompt = ri("START.reprompt");
+
+    return handlerInput.jrb
+      .speak(startGameSpeech)
+      .reprompt(startGameReprompt)
       .getResponse();
   },
 };
@@ -135,7 +139,6 @@ const NoIntent = {
   },
   async handle(handlerInput) {
     const attributesManager = handlerInput.attributesManager;
-    const responseBuilder = handlerInput.responseBuilder;
     const sessionAttributes = attributesManager.getSessionAttributes();
 
     sessionAttributes.endedSessionCount += 1;
@@ -144,7 +147,7 @@ const NoIntent = {
 
     await attributesManager.savePersistentAttributes();
 
-    return responseBuilder.speak('Ok, see you next time!').getResponse();
+    return handlerInput.jrb.speak(ri('GOODBYE.v2')).getResponse();
   },
 };
 
@@ -153,10 +156,10 @@ const UnhandledIntent = {
     return true;
   },
   handle(handlerInput) {
-    const outputSpeech = 'Say yes to continue, or no to end the game.';
-    return handlerInput.responseBuilder
-      .speak(outputSpeech)
-      .reprompt(outputSpeech)
+    const unhandledSpeech = ri('UNHANDLED');
+    return handlerInput.jrb
+      .speak(unhandledSpeech)
+      .reprompt(unhandledSpeech)
       .getResponse();
   },
 };
@@ -177,35 +180,45 @@ const NumberGuessIntent = {
     return isCurrentlyPlaying && request.type === 'IntentRequest' && request.intent.name === 'NumberGuessIntent';
   },
   async handle(handlerInput) {
-    const { requestEnvelope, attributesManager, responseBuilder } = handlerInput;
+    const { requestEnvelope, attributesManager, jrb } = handlerInput;
 
     const guessNum = parseInt(requestEnvelope.request.intent.slots.number.value, 10);
     const sessionAttributes = attributesManager.getSessionAttributes();
     const targetNum = sessionAttributes.guessNumber;
 
     if (guessNum > targetNum) {
-      return responseBuilder
-        .speak(`${guessNum.toString()} is too high.`)
-        .reprompt('Try saying a smaller number.')
+      const highSpeech = ri('GUESS_RESPONSE.high.default', { guess: guessNum.toString() });
+      const highReprompt = ri('GUESS_RESPONSE.high.reprompt');
+
+      return jrb
+        .speak(highSpeech)
+        .reprompt(highReprompt)
         .getResponse();
     } else if (guessNum < targetNum) {
-      return responseBuilder
-        .speak(`${guessNum.toString()} is too low.`)
-        .reprompt('Try saying a larger number.')
+      const lowSpeech = ri('GUESS_RESPONSE.low.default', { guess: guessNum.toString() });
+      const lowReprompt = ri('GUESS_RESPONSE.low.reprompt');
+
+      return jrb
+        .speak(lowSpeech)
+        .reprompt(lowReprompt)
         .getResponse();
     } else if (guessNum === targetNum) {
       sessionAttributes.gamesPlayed += 1;
       sessionAttributes.gameState = 'ENDED';
       attributesManager.setPersistentAttributes(sessionAttributes);
       await attributesManager.savePersistentAttributes();
-      return responseBuilder
-        .speak(`${guessNum.toString()} is correct! Would you like to play a new game?`)
-        .reprompt('Say yes to start a new game, or no to end the game.')
+
+      const correctSpeach = ri('GUESS_RESPONSE.equal.default', { guess: guessNum.toString() });
+      const correctReprompt = ri('GUESS_RESPONSE.equal.reprompt');
+
+      return jrb
+        .speak(correctSpeach)
+        .reprompt(correctReprompt)
         .getResponse();
     }
-    return handlerInput.responseBuilder
-      .speak('Sorry, I didn\'t get that. Try saying a number.')
-      .reprompt('Try saying a number.')
+    return jrb
+      .speak(ri('badInput.default'))
+      .reprompt(ri('badInput.repromt'))
       .getResponse();
   },
 };
@@ -217,9 +230,11 @@ const ErrorHandler = {
   handle(handlerInput, error) {
     console.log(`Error handled: ${error.message}`);
 
-    return handlerInput.responseBuilder
-      .speak('Sorry, I can\'t understand the command. Please say again.')
-      .reprompt('Sorry, I can\'t understand the command. Please say again.')
+    const errorSpeech = ri('ERROR');
+
+    return handlerInput.jrb
+      .speak(errorSpeech)
+      .reprompt(errorSpeech)
       .getResponse();
   },
 };
@@ -241,16 +256,16 @@ const FallbackHandler = {
     if (sessionAttributes.gameState &&
       sessionAttributes.gameState === 'STARTED') {
       // currently playing
-      return handlerInput.responseBuilder
-        .speak(FALLBACK_MESSAGE_DURING_GAME)
-        .reprompt(FALLBACK_REPROMPT_DURING_GAME)
+      return handlerInput.jrb
+        .speak(inGameFallback)
+        .reprompt(inGameFallbackRepromt)
         .getResponse();
     }
 
     // not playing
-    return handlerInput.responseBuilder
-      .speak(FALLBACK_MESSAGE_OUTSIDE_GAME)
-      .reprompt(FALLBACK_REPROMPT_OUTSIDE_GAME)
+    return handlerInput.jrb
+      .speak(outGameFallback)
+      .reprompt(outGameFallbackReprompt)
       .getResponse();
   },
 };
@@ -274,7 +289,7 @@ function getPersistenceAdapter(tableName) {
   });
 }
 
-const skillBuilder = Alexa.SkillBuilders.custom();
+const skillBuilder = new Jargon.JargonSkillBuilder().wrap(Alexa.SkillBuilders.custom());
 
 exports.handler = skillBuilder
   .withPersistenceAdapter(getPersistenceAdapter(ddbTableName))
