@@ -4,7 +4,7 @@
     "FALLBACK_MESSAGE_OUTSIDE_GAME":"The {skillName} skill can't help you with that.  It will come up with a number between 0 and 100 and you try to guess it by saying a number in that range. Would you like to play?",
     "FALLBACK_REPROMPT_OUTSIDE_GAME":"Say yes to start the game or no to quit.",
     "WELCOME":{
-        "default":"Welcome to High Low guessing game. You have played {gamesPlayed} times. would you like to play?",
+        "default":"Welcome to High Low guessing game integrated with Jargon. You have played {gamesPlayed} times. would you like to play?",
         "reprompt":"Say yes to start the game or no to quit."
     },
     "HELP":{

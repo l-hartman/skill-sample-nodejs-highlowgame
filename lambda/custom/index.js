@@ -26,7 +26,8 @@ const LaunchRequest = {
     // no one shots a reasonable idea except for help, and the welcome message provides some help.
     return handlerInput.requestEnvelope.session.new || handlerInput.requestEnvelope.request.type === 'LaunchRequest';
   },
-  async handle(handlerInput) {
+    async handle(handlerInput) {
+    const { jrb } = handlerInput;
     const attributesManager = handlerInput.attributesManager;
 
     const attributes = await attributesManager.getPersistentAttributes() || {};
@@ -41,7 +42,7 @@ const LaunchRequest = {
     const welcomeSpeech = ri('WELCOME.default', { gamesPlayed: attributes.gamesPlayed.toString() });
     const welcomeReprompt = ri('WELCOME.reprompt');
 
-    return handlerInput.jrb
+    return jrb
       .speak(welcomeSpeech)
       .reprompt(welcomeReprompt)
       .getResponse();
@@ -217,8 +218,8 @@ const NumberGuessIntent = {
         .getResponse();
     }
     return jrb
-      .speak(ri('badInput.default'))
-      .reprompt(ri('badInput.repromt'))
+      .speak(ri('GUESS_RESPONSE.badInput.default'))
+      .reprompt(ri('GUESS_RESPONSE.badInput.reprompt'))
       .getResponse();
   },
 };

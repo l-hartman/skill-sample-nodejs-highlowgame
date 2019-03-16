@@ -1,0 +1,42 @@
+{
+    "FALLBACK_MESSAGE_DURING_GAME": "The {skillName} skill can't help you with that.  Try guessing a number between 0 and 100.",
+    "FALLBACK_REPROMPT_DURING_GAME": "Please guess a number between 0 and 100.",
+    "FALLBACK_MESSAGE_OUTSIDE_GAME": "The {skillName} skill can't help you with that.  It will come up with a number between 0 and 100 and you try to guess it by saying a number in that range. Would you like to play?",
+    "FALLBACK_REPROMPT_OUTSIDE_GAME": "Say yes to start the game or no to quit.",
+    "WELCOME": {
+        "default": "Welcome to High Low guessing game integrated with Jargon. You have played {gamesPlayed} times. would you like to play?",
+        "reprompt": "Say yes to start the game or no to quit."
+    },
+    "HELP":{
+        "default": "I am thinking of a number between zero and one hundred, try to guess it and I will tell you if it is higher or lower.",
+        "reprompt": "Try saying a number."
+    },
+    "START":{
+        "default": "Great! Try saying a number to start the game.",
+        "reprompt": "Try saying a number."
+    },
+    "UNHANDLED": "Say yes to continue, or no to end the game.",
+    "GUESS_RESPONSE":{
+        "high":{
+            "default": "{guess} is too high.",
+            "repromt": "Try saying a larger number."
+        },
+        "low":{
+            "default": "{guess} is too low.",
+            "repromt": "Try saying a larger number."
+        },
+        "equal":{
+            "default": "{guess} is correct! Would you like to play a new game?",
+            "repromt": "Say yes to start a new game, or no to end the game."
+        },
+        "badInput":{
+            "default": "Sorry, I didn't get that. Try saying a number.",
+            "repromt": "Try saying a number."
+        }
+    },
+    "ERROR": "Sorry, I can't understand the command. Please say again.",
+    "GOODBYE": {
+        "v1": "Thanks for playing!",
+        "v2": "Ok, see you next time!"
+    }
+}
